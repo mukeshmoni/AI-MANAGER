@@ -7,36 +7,33 @@ from src.report_data import save_data_to_csv
 def process_invoice(pdf_path, is_scanned=False):
     print(f"Processing invoice from: {pdf_path}")
 
-
     if is_scanned:
-        print("Using OCR-based extraction...")
+        print("Using OCR extraction...")
         text = ocr_pdf_to_text(pdf_path)
     else:
         print("Using regular text extraction...")
         text = extract_text_from_pdf(pdf_path)
-    
-    print("\nExtracted Text:\n", text)
 
+    print("Extracted Text:")
+    print(text)
+
+    # Step 2: Process text
     invoice_data = extract_invoice_data(text)
-    print("\nExtracted invoice data:", invoice_data)
+    print("Extracted invoice data:", invoice_data)
 
+    # Step 3: Categorize
+    invoice_data['category'] = categorize_invoice(invoice_data.get('vendor', ''))
 
-    if invoice_data.get('vendor') and invoice_data['vendor'] != 'Missing':
-        invoice_data['category'] = categorize_invoice(invoice_data['vendor'])
-    else:
-        invoice_data['category'] = 'Uncategorized'
-    print(f"Invoice category assigned: {invoice_data['category']}")
-
-   
+    # Step 4: Validate
     errors = validate_data(invoice_data)
     if errors:
         print("Validation errors:", errors)
         return
 
-   
-       save_data_to_csv([invoice_data])
-    print(f"\nProcessed and saved invoice data for Invoice Number: {invoice_data['invoice_number']}")
+    # Step 5: Save to CSV
+    save_data_to_csv([invoice_data])
+    print(f"Processed and saved invoice data for Invoice #{invoice_data['invoice_number']}.")
 
 if __name__ == "__main__":
-    pdf_path = "data/invoices/sample_invoice.pdf"   
-    process_invoice(pdf_path, is_scanned=False)      
+    pdf_path = "data/invoices/sample_invoice.pdf"  # Example file path
+    process_invoice(pdf_path, is_scanned=False)    # Set to True if scanned PDF
