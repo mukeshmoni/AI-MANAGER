@@ -5,36 +5,53 @@ from src.validate_data import validate_data
 from src.report_data import save_data_to_csv
 
 def process_invoice(pdf_path, is_scanned=False):
-    print(f"Processing invoice from: {pdf_path}")
-
+    print(f"\n📄 Processing invoice: {pdf_path}")
+    
     # Step 1: Extract text
     if is_scanned:
-        print("Using OCR extraction...")
+        print("🔍 Using OCR for scanned PDF...")
         text = ocr_pdf_to_text(pdf_path)
     else:
-        print("Using regular text extraction...")
+        print("📄 Using text-based PDF extraction...")
         text = extract_text_from_pdf(pdf_path)
+    
+    print("📃 Extracted Text:\n", text[:500])  # show only first 500 chars
 
-    print("Extracted Text:")
-    print(text)
-
-    # Step 2: Process text
+    # Step 2: Extract data
     invoice_data = extract_invoice_data(text)
-    print("Extracted invoice data:", invoice_data)
+    print("🧾 Extracted Invoice Data:", invoice_data)
 
-    # Step 3: Categorize
-    invoice_data['category'] = categorize_invoice(invoice_data.get('vendor', ''))
+    # Step 3: Categorize vendor
+    if 'vendor' in invoice_data:
+        invoice_data['category'] = categorize_invoice(invoice_data['vendor'])
+        print("📦 Category:", invoice_data['category'])
+    else:
+        print("⚠️ Vendor not found! Cannot categorize.")
+        invoice_data['category'] = "Unknown"
 
     # Step 4: Validate
     errors = validate_data(invoice_data)
     if errors:
-        print("Validation errors:", errors)
+        print("❌ Validation Errors:", errors)
         return
-
-    # Step 5: Save to CSV
+    
+    # Step 5: Save
     save_data_to_csv([invoice_data])
-    print(f"Processed and saved invoice data for Invoice #{invoice_data['invoice_number']}.")
+    print(f"✅ Invoice {invoice_data.get('invoice_number', '(Unknown)')} saved successfully!\n")
+
 
 if __name__ == "__main__":
-    pdf_path = "data/invoices/sample_invoice.pdf"  # Example file path
-    process_invoice(pdf_path, is_scanned=False)    # Set to True if scanned PDF
+    print("==== AI Invoice Management System ====\n")
+    while True:
+        pdf_path = input("📂 Enter PDF file path (or type 'exit' to quit): ").strip()
+        if pdf_path.lower() == 'exit':
+            print("👋 Exiting application. Goodbye!")
+            break
+
+        is_scanned_input = input("Is this a scanned PDF? (yes/no): ").strip().lower()
+        is_scanned = is_scanned_input in ['yes', 'y']
+
+        try:
+            process_invoice(pdf_path, is_scanned)
+        except Exception as e:
+            print("❗ Error during processing:", e)
